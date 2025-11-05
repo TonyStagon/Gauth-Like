@@ -5,13 +5,20 @@ import { Button, StyleSheet, View } from 'react-native';
 export default function CameraCrop() {
   const cameraRef = useRef(null);
   const [hasPermission, setHasPermission] = useState(null);
-  const [type, setType] = useState(Camera.Constants.Type.back);
+  const [type, setType] = useState(null);
 
   useEffect(() => {
     (async () => {
       const { status } = await Camera.requestCameraPermissionsAsync();
       setHasPermission(status === 'granted');
     })();
+  }, []);
+
+  // Set camera type safely when Camera.Constants becomes available
+  useEffect(() => {
+    if (Camera.Constants?.Type) {
+      setType(Camera.Constants.Type.back);
+    }
   }, []);
 
   if (hasPermission === null) {
@@ -30,21 +37,23 @@ export default function CameraCrop() {
 
   return (
     <View style={styles.container}>
-      <Camera style={styles.camera} type={type} ref={cameraRef}>
-        <View style={styles.buttonContainer}>
-          <Button
-            title="Flip Camera"
-            onPress={() => {
-              setType(
-                type === Camera.Constants.Type.back
-                  ? Camera.Constants.Type.front
-                  : Camera.Constants.Type.back
-              );
-            }}
-          />
-          <Button title="Take Photo" onPress={takePicture} />
-        </View>
-      </Camera>
+      {(type !== null) && hasPermission && (
+        <Camera style={styles.camera} type={type || 'back'} ref={cameraRef}>
+          <View style={styles.buttonContainer}>
+            <Button
+              title="Flip Camera"
+              onPress={() => {
+                setType(
+                  type === Camera.Constants?.Type?.back
+                    ? Camera.Constants?.Type?.front || 'front'
+                    : Camera.Constants?.Type?.back || 'back'
+                );
+              }}
+            />
+            <Button title="Take Photo" onPress={takePicture} />
+          </View>
+        </Camera>
+      )}
     </View>
   );
 }
