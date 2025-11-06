@@ -9,6 +9,7 @@ export default function CameraCropScreen() {
   const cameraRef = useRef(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState('back');
+  const [flashMode, setFlashMode] = useState('off');
 
   if (!permission) {
     return <View style={styles.container} />;
@@ -41,6 +42,10 @@ export default function CameraCropScreen() {
     setFacing(current => (current === 'back' ? 'front' : 'back'));
   };
 
+  const toggleFlash = () => {
+    setFlashMode(prev => (prev === 'off' ? 'on' : prev === 'on' ? 'auto' : 'off'));
+  };
+
   return (
     <View style={styles.container}>
       <CameraView style={styles.camera} facing={facing} ref={cameraRef}>
@@ -67,11 +72,25 @@ export default function CameraCropScreen() {
         {/* Bottom Controls */}
         <View style={styles.bottomContainer}>
           {/* Lightning Icon */}
-          <View style={styles.lightningContainer}>
-            <View style={styles.lightningBadge}>
-              <Text style={styles.lightningIcon}>⚡</Text>
+          <TouchableOpacity style={styles.lightningContainer} onPress={toggleFlash}>
+            <View style={[
+              styles.lightningBadge,
+              flashMode === 'on' && { backgroundColor: 'rgba(255, 255, 0, 0.3)' },
+              flashMode === 'auto' && { backgroundColor: 'rgba(255, 255, 255, 0.2)' },
+            ]}>
+              <Ionicons
+                name={
+                  flashMode === 'on'
+                    ? 'flash'
+                    : flashMode === 'auto'
+                    ? 'flash-auto'
+                    : 'flash-off'
+                }
+                size={24}
+                color="white"
+              />
             </View>
-          </View>
+          </TouchableOpacity>
 
           {/* Camera Controls */}
           <View style={styles.controlsRow}>
