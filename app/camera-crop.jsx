@@ -1,7 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
-import { CameraView, useCameraPermissions } from 'expo-camera';
-import * as ImageManipulator from 'expo-image-manipulator';
-import { useRef, useState } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import * as ImageManipulator from "expo-image-manipulator";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -12,34 +12,34 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
+} from "react-native";
 
 // ML Kit import - Handle gracefully in case package doesn't properly export
 const MlKitOcr = () => {
-  console.warn('ML Kit functionality not properly configured');
+  console.warn("ML Kit functionality not properly configured");
   return {
     detectFromUri: async () => {
-      throw new Error('ML Kit OCR not configured');
-    }
+      throw new Error("ML Kit OCR not configured");
+    },
   };
 };
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
 const subjects = [
-  { id: 'math', name: 'Math' },
-  { id: 'biology', name: 'Biology' },
-  { id: 'physics', name: 'Physics' },
-  { id: 'chemistry', name: 'Chemistry' },
-  { id: 'history', name: 'History' },
-  { id: 'geography', name: 'Geography' },
+  { id: "math", name: "Math" },
+  { id: "biology", name: "Biology" },
+  { id: "physics", name: "Physics" },
+  { id: "chemistry", name: "Chemistry" },
+  { id: "history", name: "History" },
+  { id: "geography", name: "Geography" },
 ];
 
 export default function CameraCropScreen() {
   const cameraRef = useRef(null);
   const [permission, requestPermission] = useCameraPermissions();
-  const [facing, setFacing] = useState('back');
-  const [flashMode, setFlashMode] = useState('off');
+  const [facing, setFacing] = useState("back");
+  const [flashMode, setFlashMode] = useState("off");
   const [autoDetect, setAutoDetect] = useState(true);
   const [capturedImage, setCapturedImage] = useState(null);
   const [detectedBoxes, setDetectedBoxes] = useState([]);
@@ -55,8 +55,13 @@ export default function CameraCropScreen() {
   if (!permission.granted) {
     return (
       <View style={styles.container}>
-        <Text style={styles.permissionText}>We need your permission to show the camera</Text>
-        <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+        <Text style={styles.permissionText}>
+          We need your permission to show the camera
+        </Text>
+        <TouchableOpacity
+          style={styles.permissionButton}
+          onPress={requestPermission}
+        >
           <Text style={styles.permissionButtonText}>Grant Permission</Text>
         </TouchableOpacity>
       </View>
@@ -66,7 +71,7 @@ export default function CameraCropScreen() {
   // Text detection function with safe fallbacks
   const detectTextRegions = async (photoUri, imageWidth, imageHeight) => {
     if (!imageWidth || !imageHeight || imageWidth <= 0 || imageHeight <= 0) {
-      console.warn('Invalid image dimensions:', imageWidth, imageHeight);
+      console.warn("Invalid image dimensions:", imageWidth, imageHeight);
       return [
         {
           id: 1,
@@ -86,44 +91,48 @@ export default function CameraCropScreen() {
     }
 
     try {
-      console.log('Starting text detection on:', photoUri);
-      console.log('Image dimensions:', imageWidth, 'x', imageHeight);
-      
+      console.log("Starting text detection on:", photoUri);
+      console.log("Image dimensions:", imageWidth, "x", imageHeight);
+
       // Attempt to use ML Kit if available
       try {
         const result = await MlKitOcr().detectFromUri(photoUri);
-        console.log('ML Kit detection result:', result);
-        
+        console.log("ML Kit detection result:", result);
+
         if (!result || !result.blocks || result.blocks.length === 0) {
-          console.log('No text detected by ML Kit');
+          console.log("No text detected by ML Kit");
           return [];
         }
 
         // Parse ML Kit result and convert to our box format
         const detectedBoxes = result.blocks.map((block, index) => {
           const frame = block.frame || block.boundingBox || block || {};
-          
+
           // Safe coordinate conversion with defaults
           const x = (frame.x || frame.left || 0.1) * Math.max(imageWidth, 1);
           const y = (frame.y || frame.top || 0.2) * Math.max(imageHeight, 1);
-          const detectedWidth = (frame.width || (frame.right - frame.left) || 0.8) * Math.max(imageWidth, 1);
-          const detectedHeight = (frame.height || (frame.bottom - frame.top) || 0.15) * Math.max(imageHeight, 1);
-          
+          const detectedWidth =
+            (frame.width || frame.right - frame.left || 0.8) *
+            Math.max(imageWidth, 1);
+          const detectedHeight =
+            (frame.height || frame.bottom - frame.top || 0.15) *
+            Math.max(imageHeight, 1);
+
           return {
             id: index + 1,
             x: Math.max(0, x),
             y: Math.max(0, y),
             width: Math.max(1, detectedWidth),
             height: Math.max(1, detectedHeight),
-            text: block.text || '',
-            confidence: block.confidence || Math.random() * 0.5 + 0.5
+            text: block.text || "",
+            confidence: block.confidence || Math.random() * 0.5 + 0.5,
           };
         });
 
         console.log(`ML Kit detected ${detectedBoxes.length} text regions`);
         return detectedBoxes;
       } catch (mlError) {
-        console.warn('ML Kit error, using fallback detection:', mlError);
+        console.warn("ML Kit error, using fallback detection:", mlError);
         return [
           {
             id: 1,
@@ -142,7 +151,7 @@ export default function CameraCropScreen() {
         ];
       }
     } catch (error) {
-      console.error('General text detection error:', error);
+      console.error("General text detection error:", error);
       return [];
     }
   };
@@ -155,15 +164,19 @@ export default function CameraCropScreen() {
           quality: 1,
           base64: false,
         });
-        
+
         setCapturedImage(photo);
 
         if (autoDetect) {
           // Use real ML Kit text detection
           try {
-            const boxes = await detectTextRegions(photo.uri, photo.width, photo.height);
+            const boxes = await detectTextRegions(
+              photo.uri,
+              photo.width,
+              photo.height
+            );
             setDetectedBoxes(boxes);
-            
+
             if (boxes.length > 0) {
               // Auto-select the first/largest box
               // Find the largest box by area
@@ -175,15 +188,15 @@ export default function CameraCropScreen() {
               setSelectedBox(largestBox);
             }
           } catch (error) {
-            console.error('Error during text detection:', error);
+            console.error("Error during text detection:", error);
             // If ML Kit fails, keep the camera UI functional
             setDetectedBoxes([]);
           }
         }
-        
+
         setIsProcessing(false);
       } catch (error) {
-        console.error('Error taking picture:', error);
+        console.error("Error taking picture:", error);
         setIsProcessing(false);
       }
     }
@@ -194,7 +207,7 @@ export default function CameraCropScreen() {
 
     try {
       setIsProcessing(true);
-      
+
       const cropData = {
         originX: box.x,
         originY: box.y,
@@ -212,7 +225,7 @@ export default function CameraCropScreen() {
       setShowSubjectModal(true);
       setIsProcessing(false);
     } catch (error) {
-      console.error('Error cropping image:', error);
+      console.error("Error cropping image:", error);
       setIsProcessing(false);
     }
   };
@@ -240,35 +253,37 @@ export default function CameraCropScreen() {
   };
 
   const handleSubjectSelect = (subject) => {
-    console.log('Selected subject:', subject);
-    console.log('Cropped image:', croppedImage);
+    console.log("Selected subject:", subject);
+    console.log("Cropped image:", croppedImage);
     // Navigate to next screen with cropped image and subject
     // You can add navigation here or pass to parent component
     handleRetake(); // Reset for demo
   };
 
   const toggleCameraFacing = () => {
-    setFacing(current => (current === 'back' ? 'front' : 'back'));
+    setFacing((current) => (current === "back" ? "front" : "back"));
   };
 
   const toggleFlash = () => {
-    setFlashMode(prev => (prev === 'off' ? 'on' : prev === 'on' ? 'auto' : 'off'));
+    setFlashMode((prev) =>
+      prev === "off" ? "on" : prev === "on" ? "auto" : "off"
+    );
   };
 
   const toggleAutoDetect = () => {
-    setAutoDetect(prev => !prev);
+    setAutoDetect((prev) => !prev);
   };
 
   // Render captured image with detection boxes
   if (capturedImage && !showSubjectModal) {
     const imageAspectRatio = capturedImage.width / capturedImage.height;
     const screenAspectRatio = width / height;
-    
+
     let displayWidth = width;
     let displayHeight = height;
     let offsetX = 0;
     let offsetY = 0;
-    
+
     // Fit image within screen while maintaining aspect ratio
     if (imageAspectRatio > screenAspectRatio) {
       displayHeight = width / imageAspectRatio;
@@ -277,7 +292,7 @@ export default function CameraCropScreen() {
       displayWidth = height * imageAspectRatio;
       offsetX = (width - displayWidth) / 2;
     }
-    
+
     return (
       <View style={styles.container}>
         <View style={styles.previewContainer}>
@@ -290,26 +305,33 @@ export default function CameraCropScreen() {
                 height: displayHeight,
                 marginLeft: offsetX,
                 marginTop: offsetY,
-              }
+              },
             ]}
           />
-          
+
           {/* Draw detection boxes - only show when autoDetect is enabled and boxes are detected */}
           {autoDetect && detectedBoxes && detectedBoxes.length > 0 && (
-            <View style={[StyleSheet.absoluteFill, styles.detectionBoxesContainer]}>
+            <View
+              style={[StyleSheet.absoluteFill, styles.detectionBoxesContainer]}
+            >
               {detectedBoxes.map((box) => (
                 <TouchableOpacity
                   key={box.id}
                   style={[
                     styles.detectionBox,
                     {
-                      left: (displayWidth * (box.x / capturedImage.width)) + offsetX,
-                      top: (displayHeight * (box.y / capturedImage.height)) + offsetY,
+                      left:
+                        displayWidth * (box.x / capturedImage.width) + offsetX,
+                      top:
+                        displayHeight * (box.y / capturedImage.height) +
+                        offsetY,
                       width: displayWidth * (box.width / capturedImage.width),
-                      height: displayHeight * (box.height / capturedImage.height),
+                      height:
+                        displayHeight * (box.height / capturedImage.height),
                     },
-                    (selectedBox?.id === box.id) && styles.selectedBox,
-                    (!autoDetect || !detectedBoxes.length) && styles.disabledBox,
+                    selectedBox?.id === box.id && styles.selectedBox,
+                    (!autoDetect || !detectedBoxes.length) &&
+                      styles.disabledBox,
                   ]}
                   onPress={() => handleBoxSelect(box)}
                   disabled={!autoDetect}
@@ -325,10 +347,12 @@ export default function CameraCropScreen() {
 
           {/* Manual selection area when auto-detect is off */}
           {!autoDetect && (
-            <View style={[StyleSheet.absoluteFill, styles.manualSelectionContainer]}>
+            <View
+              style={[StyleSheet.absoluteFill, styles.manualSelectionContainer]}
+            >
               <View style={styles.manualSelectionHint}>
                 <Text style={styles.manualSelectionText}>
-                  Auto-detect disabled{'\n'}System will proceed with full image
+                  Auto-detect disabled{"\n"}System will proceed with full image
                 </Text>
               </View>
             </View>
@@ -342,17 +366,16 @@ export default function CameraCropScreen() {
             <Text style={styles.instructionText}>
               {autoDetect
                 ? detectedBoxes && detectedBoxes.length > 0
-                  ? 'Tap a box to select'
-                  : 'No text detected'
-                : 'Full image selected'
-              }
+                  ? "Tap a box to select"
+                  : "No text detected"
+                : "Full image selected"}
             </Text>
             <TouchableOpacity
               style={[styles.topButton, styles.autoDetectButton]}
               onPress={toggleAutoDetect}
             >
               <Text style={styles.autoDetectButtonText}>
-                {autoDetect ? 'Auto' : 'Manual'}
+                {autoDetect ? "Auto" : "Manual"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -362,10 +385,20 @@ export default function CameraCropScreen() {
             <TouchableOpacity
               style={[
                 styles.confirmButton,
-                (!selectedBox && autoDetect && detectedBoxes && detectedBoxes.length > 0) && styles.disabledConfirmButton
+                !selectedBox &&
+                  autoDetect &&
+                  detectedBoxes &&
+                  detectedBoxes.length > 0 &&
+                  styles.disabledConfirmButton,
               ]}
               onPress={handleConfirmCrop}
-              disabled={isProcessing || (!selectedBox && autoDetect && detectedBoxes && detectedBoxes.length > 0)}
+              disabled={
+                isProcessing ||
+                (!selectedBox &&
+                  autoDetect &&
+                  detectedBoxes &&
+                  detectedBoxes.length > 0)
+              }
             >
               {isProcessing ? (
                 <ActivityIndicator color="white" />
@@ -373,7 +406,9 @@ export default function CameraCropScreen() {
                 <>
                   <Ionicons name="checkmark" size={24} color="white" />
                   <Text style={styles.confirmText}>
-                    {selectedBox || !autoDetect ? 'Confirm' : 'Please select an area'}
+                    {selectedBox || !autoDetect
+                      ? "Confirm"
+                      : "Please select an area"}
                   </Text>
                 </>
               )}
@@ -387,18 +422,27 @@ export default function CameraCropScreen() {
   // Subject selection modal
   if (showSubjectModal) {
     return (
-      <Modal visible={showSubjectModal} animationType="slide" transparent={false}>
+      <Modal
+        visible={showSubjectModal}
+        animationType="slide"
+        transparent={false}
+      >
         <View style={styles.modalContainer}>
           {/* Preview of cropped image */}
           <View style={styles.croppedPreview}>
             {croppedImage && (
-              <Image source={{ uri: croppedImage }} style={styles.croppedImage} />
+              <Image
+                source={{ uri: croppedImage }}
+                style={styles.croppedImage}
+              />
             )}
           </View>
 
           {/* Subject selection */}
           <View style={styles.subjectContainer}>
-            <Text style={styles.subjectTitle}>What is the question related to?</Text>
+            <Text style={styles.subjectTitle}>
+              What is the question related to?
+            </Text>
             <ScrollView style={styles.subjectList}>
               {subjects.map((subject) => (
                 <TouchableOpacity
@@ -424,7 +468,12 @@ export default function CameraCropScreen() {
   // Camera view
   return (
     <View style={styles.container}>
-      <CameraView style={styles.camera} facing={facing} ref={cameraRef} flash={flashMode}>
+      <CameraView
+        style={styles.camera}
+        facing={facing}
+        ref={cameraRef}
+        flash={flashMode}
+      >
         {/* Top Bar */}
         <View style={styles.topBar}>
           <TouchableOpacity style={styles.topButton}>
@@ -434,7 +483,10 @@ export default function CameraCropScreen() {
             <Ionicons name="shield" size={20} color="#4FC3F7" />
             <Text style={styles.getProText}>Get pro</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.topButton} onPress={toggleCameraFacing}>
+          <TouchableOpacity
+            style={styles.topButton}
+            onPress={toggleCameraFacing}
+          >
             <Ionicons name="camera-reverse" size={28} color="white" />
           </TouchableOpacity>
         </View>
@@ -443,17 +495,21 @@ export default function CameraCropScreen() {
         <View style={styles.centerContent}>
           <Text style={styles.mainText}>Take a pic and get</Text>
           <Text style={styles.mainText}>an answer</Text>
-          
+
           {/* Auto-detect toggle */}
           <TouchableOpacity
             style={styles.autoDetectToggle}
             onPress={toggleAutoDetect}
           >
-            <View style={[styles.toggleSwitch, autoDetect && styles.toggleActive]}>
-              <View style={[styles.toggleThumb, autoDetect && styles.thumbActive]} />
+            <View
+              style={[styles.toggleSwitch, autoDetect && styles.toggleActive]}
+            >
+              <View
+                style={[styles.toggleThumb, autoDetect && styles.thumbActive]}
+              />
             </View>
             <Text style={styles.toggleLabel}>
-              {autoDetect ? 'Auto-detect ON' : 'Auto-detect OFF'}
+              {autoDetect ? "Auto-detect ON" : "Auto-detect OFF"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -461,21 +517,28 @@ export default function CameraCropScreen() {
         {/* Bottom Controls */}
         <View style={styles.bottomContainer}>
           {/* Lightning Icon */}
-          <TouchableOpacity style={styles.lightningContainer} onPress={toggleFlash}>
+          <TouchableOpacity
+            style={styles.lightningContainer}
+            onPress={toggleFlash}
+          >
             <View
               style={[
                 styles.lightningBadge,
-                flashMode === 'on' && { backgroundColor: 'rgba(255, 255, 0, 0.3)' },
-                flashMode === 'auto' && { backgroundColor: 'rgba(255, 255, 255, 0.2)' },
+                flashMode === "on" && {
+                  backgroundColor: "rgba(255, 255, 0, 0.3)",
+                },
+                flashMode === "auto" && {
+                  backgroundColor: "rgba(255, 255, 255, 0.2)",
+                },
               ]}
             >
               <Ionicons
                 name={
-                  flashMode === 'on'
-                    ? 'flash'
-                    : flashMode === 'auto'
-                    ? 'flash-outline'
-                    : 'flash-off'
+                  flashMode === "on"
+                    ? "flash"
+                    : flashMode === "auto"
+                    ? "flash-outline"
+                    : "flash-off"
                 }
                 size={24}
                 color="white"
@@ -518,7 +581,9 @@ export default function CameraCropScreen() {
 
             <TouchableOpacity style={styles.navItem}>
               <Ionicons name="camera" size={24} color="white" />
-              <Text style={[styles.navLabel, styles.navLabelActive]}>Camera</Text>
+              <Text style={[styles.navLabel, styles.navLabelActive]}>
+                Camera
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.navItem}>
@@ -535,32 +600,32 @@ export default function CameraCropScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: "#000",
   },
   camera: {
     flex: 1,
   },
   permissionText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 20,
   },
   permissionButton: {
-    backgroundColor: '#4FC3F7',
+    backgroundColor: "#4FC3F7",
     paddingHorizontal: 30,
     paddingVertical: 15,
     borderRadius: 10,
   },
   permissionButtonText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
@@ -568,85 +633,85 @@ const styles = StyleSheet.create({
   topButton: {
     width: 44,
     height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   getPro: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(79, 195, 247, 0.2)',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(79, 195, 247, 0.2)",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     gap: 6,
   },
   getProText: {
-    color: 'white',
+    color: "white",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   centerContent: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   mainText: {
-    color: 'white',
+    color: "white",
     fontSize: 26,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
   },
   autoDetectToggle: {
     marginTop: 30,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   toggleSwitch: {
     width: 50,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
     padding: 2,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   toggleActive: {
-    backgroundColor: '#4FC3F7',
+    backgroundColor: "#4FC3F7",
   },
   toggleThumb: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     transform: [{ translateX: 0 }],
   },
   thumbActive: {
     transform: [{ translateX: 22 }],
   },
   toggleLabel: {
-    color: 'white',
+    color: "white",
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   bottomContainer: {
     paddingBottom: 0,
   },
   lightningContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 15,
   },
   lightningBadge: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 193, 7, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(255, 193, 7, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   controlsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 40,
     marginBottom: 30,
   },
@@ -654,204 +719,208 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: 'rgba(60, 60, 67, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(60, 60, 67, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   shutterButton: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "white",
+    justifyContent: "center",
+    alignItems: "center",
     marginHorizontal: 40,
   },
   shutterInner: {
     width: 66,
     height: 66,
     borderRadius: 33,
-    backgroundColor: '#4FC3F7',
+    backgroundColor: "#4FC3F7",
   },
   detectionBoxesContainer: {
-    pointerEvents: 'box-none',
+    pointerEvents: "box-none",
   },
   manualSelectionContainer: {
-    pointerEvents: 'none',
+    pointerEvents: "none",
   },
   manualSelectionHint: {
-    position: 'absolute',
-    top: '50%',
+    position: "absolute",
+    top: "50%",
     left: 0,
     right: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
     padding: 20,
     marginHorizontal: 40,
     borderRadius: 12,
   },
   manualSelectionText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
-    fontWeight: '500',
-    textAlign: 'center',
+    fontWeight: "500",
+    textAlign: "center",
   },
   disabledBox: {
     opacity: 0.5,
   },
   autoDetectButton: {
-    backgroundColor: 'rgba(79, 195, 247, 0.3)',
+    backgroundColor: "rgba(79, 195, 247, 0.3)",
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 4,
   },
   autoDetectButtonText: {
-    color: 'white',
+    color: "white",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   disabledConfirmButton: {
-    backgroundColor: 'rgba(79, 195, 247, 0.4)',
+    backgroundColor: "rgba(79, 195, 247, 0.4)",
   },
   bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    backgroundColor: '#000',
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    backgroundColor: "#000",
     paddingTop: 10,
     paddingBottom: 30,
     borderTopWidth: 0.5,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    borderTopColor: "rgba(255, 255, 255, 0.1)",
   },
   navItem: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: 4,
   },
   navLabel: {
-    color: '#8E8E93',
+    color: "#8E8E93",
     fontSize: 12,
   },
   navLabelActive: {
-    color: 'white',
+    color: "white",
   },
   previewContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: "#000",
   },
   previewImage: {
     width: width,
     height: height,
-    resizeMode: 'contain',
+    resizeMode: "contain",
   },
   detectionBox: {
-    position: 'absolute',
+    position: "absolute",
     borderWidth: 2,
-    borderColor: '#4FC3F7',
+    borderColor: "#4FC3F7",
     borderRadius: 8,
   },
   selectedBox: {
-    borderColor: '#FFD700',
+    borderColor: "#FFD700",
     borderWidth: 3,
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    backgroundColor: "rgba(255, 215, 0, 0.1)",
   },
   boxCornerTL: {
-    position: 'absolute',
+    position: "absolute",
     top: -2,
     left: -2,
     width: 20,
     height: 20,
     borderTopWidth: 4,
     borderLeftWidth: 4,
-    borderColor: '#4FC3F7',
+
+    borderColor: "#ffffffff",
   },
   boxCornerTR: {
-    position: 'absolute',
+    position: "absolute",
     top: -2,
     right: -2,
     width: 20,
     height: 20,
     borderTopWidth: 4,
     borderRightWidth: 4,
-    borderColor: '#4FC3F7',
+
+    borderColor: "#ffffffff",
   },
   boxCornerBL: {
-    position: 'absolute',
+    position: "absolute",
     bottom: -2,
     left: -2,
     width: 20,
     height: 20,
     borderBottomWidth: 4,
     borderLeftWidth: 4,
-    borderColor: '#4FC3F7',
+
+    borderColor: "#ffffffff",
   },
   boxCornerBR: {
-    position: 'absolute',
+    position: "absolute",
     bottom: -2,
     right: -2,
     width: 20,
     height: 20,
     borderBottomWidth: 4,
     borderRightWidth: 4,
-    borderColor: '#4FC3F7',
+
+    borderColor: "#ffffffff",
   },
   instructionText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   confirmContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 50,
     left: 0,
     right: 0,
-    alignItems: 'center',
+    alignItems: "center",
   },
   confirmButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#4FC3F7',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#4FC3F7",
     paddingHorizontal: 40,
     paddingVertical: 16,
     borderRadius: 30,
     gap: 8,
   },
   confirmText: {
-    color: 'white',
+    color: "white",
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: "#000",
   },
   croppedPreview: {
     height: height * 0.35,
-    backgroundColor: '#1a1a1a',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#1a1a1a",
+    justifyContent: "center",
+    alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    borderBottomColor: "#333",
   },
   croppedImage: {
     width: width * 0.9,
     height: height * 0.3,
-    resizeMode: 'contain',
+    resizeMode: "contain",
     borderRadius: 12,
   },
   subjectContainer: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingTop: 30,
   },
   subjectTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
     marginBottom: 24,
-    color: '#000',
+    color: "#000",
     paddingHorizontal: 20,
   },
   subjectList: {
@@ -859,28 +928,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   subjectItem: {
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
     padding: 20,
     borderRadius: 12,
     marginBottom: 12,
   },
   subjectName: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#000',
-    textAlign: 'center',
-    width: '100%',
+    fontWeight: "500",
+    color: "#000",
+    textAlign: "center",
+    width: "100%",
   },
   backButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 60,
     left: 20,
     width: 44,
     height: 44,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
     borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
